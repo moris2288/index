@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>محاسبه‌گر هوشمند خرید کالا</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+        
+        body {
+            background: #f8f9fa;
+            padding: 15px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            margin: auto;
+            padding: 20px 15px;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+        }
+
+        h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-group label {
+            display: block;
+            color: #34495e;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .input-notice {
+            color: #e74c3c;
+            font-size: 0.65rem;
+            position: absolute;
+            left: 0;
+            top: -15px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #f9f9f9;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            background: white;
+        }
+
+        #result {
+            margin-top: 25px;
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+            background: #f0f7ff;
+            border-radius: 8px;
+        }
+
+        #result.show {
+            padding: 15px;
+            max-height: 500px;
+        }
+
+        .result-title {
+            color: #27ae60;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .result-item {
+            margin: 10px 0;
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .suggestion {
+            color: #27ae60;
+            font-weight: bold;
+            background: rgba(39, 174, 96, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .no-need {
+            color: #e74c3c;
+            text-align: center;
+            padding: 12px;
+            font-weight: 600;
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 6px;
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 30px;
+            color: #95a5a6;
+            font-size: 0.75rem;
+            padding-top: 15px;
+            border-top: 1px dashed #eee;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse-effect {
+            animation: pulse 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>محاسبه‌گر هوشمند خرید کالا</h2>
+        
+        <div class="input-group">
+            <span class="input-notice">فقط اعداد انگلیسی وارد شود</span>
+            <label>تعداد خرید قبلی:</label>
+            <input type="number" id="previousQty" min="0" step="1" inputmode="numeric" class="calc-field">
+        </div>
+
+        <div class="input-group">
+            <span class="input-notice">فقط اعداد انگلیسی وارد شود</span>
+            <label>از خرید قبلی چند روز گذشته:</label>
+            <input type="number" id="daysSince" min="1" step="1" inputmode="numeric" class="calc-field">
+        </div>
+
+        <div class="input-group">
+            <span class="input-notice">فقط اعداد انگلیسی وارد شود</span>
+            <label>مدت زمان پرداخت:</label>
+            <input type="number" id="paymentDays" min="1" step="1" inputmode="numeric" class="calc-field">
+        </div>
+
+        <div class="input-group">
+            <span class="input-notice">فقط اعداد انگلیسی وارد شود</span>
+            <label>موجودی فعلی:</label>
+            <input type="number" id="currentStock" min="0" step="1" inputmode="numeric" class="calc-field">
+        </div>
+
+        <div id="result"></div>
+
+        <div class="copyright">کلیه حقوق این برنامه برای مرتضی خان احمدی محفوظ می‌باشد</div>
+    </div>
+
+    <script>
+        function calculate() {
+            const previousQty = parseFloat(document.getElementById('previousQty').value) || 0;
+            const daysSince = parseFloat(document.getElementById('daysSince').value) || 1;
+            const paymentDays = parseFloat(document.getElementById('paymentDays').value) || 1;
+            const currentStock = parseFloat(document.getElementById('currentStock').value) || 0;
+
+            if (daysSince <= 0 || paymentDays <= 0) {
+                showResult('<div class="no-need">⚠️ مقادیر وارد شده نامعتبر هستند</div>');
+                return;
+            }
+
+            const dailyUsage = previousQty / daysSince;
+            const leadTime = paymentDays + 1;
+            const safetyStock = dailyUsage * leadTime;
+            const suggestedOrder = Math.max(0, Math.ceil((dailyUsage * leadTime) - currentStock));
+
+            const resultHTML = suggestedOrder > 0 ? `
+                <h3 class="result-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#27ae60">
+                        <path d="M9 21.035l-9-8.638 2.791-2.87 6.156 5.874 12.21-12.436 2.843 2.817z"/>
+                    </svg>
+                    نتیجه محاسبات
+                </h3>
+                <div class="result-item">
+                    <span>مصرف روزانه:</span>
+                    <span>${dailyUsage.toFixed(1)} عدد</span>
+                </div>
+                <div class="result-item">
+                    <span>تعداد ایمن برای فروشگاه:</span>
+                    <span>${safetyStock.toFixed(1)} عدد</span>
+                </div>
+                <div class="result-item suggestion">
+                    <span>پیشنهاد خرید:</span>
+                    <span>${suggestedOrder} عدد</span>
+                </div>
+            ` : '<div class="no-need">✅ موجودی کافی است، نیاز به خرید جدید وجود ندارد</div>';
+            
+            showResult(resultHTML);
+        }
+
+        function showResult(content) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = content;
+            resultDiv.classList.add('show', 'pulse-effect');
+            
+            setTimeout(() => {
+                resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 300);
+        }
+
+        function allFieldsFilled() {
+            const fields = document.querySelectorAll('.calc-field');
+            for (let field of fields) {
+                if (!field.value) return false;
+            }
+            return true;
+        }
+
+        document.querySelectorAll('.calc-field').forEach(field => {
+            field.addEventListener('input', function() {
+                if (allFieldsFilled()) {
+                    calculate();
+                } else {
+                    document.getElementById('result').classList.remove('show');
+                }
+            });
+        });
+
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (allFieldsFilled()) calculate();
+            }
+        });
+    </script>
+</body>
+</html>
